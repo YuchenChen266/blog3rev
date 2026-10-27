@@ -1,0 +1,117 @@
+---
+title: "Education Level, Unemployment Rate and Weekly Wages in the U.S. Labor Market"
+author: "Yuchen Chen"
+date: "2026-10-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ipumsr)
+```
+# Education Level, Unemployment Rate and Weekly Wages in the U.S. Labor Market
+
+## Question and Motivation
+It is generally accepted that education can improve the personal development in the United States labor market. This blog would use IPUMS Current Population Survey microdata to research how unemployment rate and weekly wages change with the change of education levels. The research question is very simple: do people with a higher education level have a lower unemployment rate, and have a higher weekly wage? This topic is really meaningful in real life economy, since education is an important and large component of spending for most people. If more education means a lower unemployment rate and a higher income, then it is not hard to understand why many people are willing to spend a lot of money and time to get a higher degree. In this analysis, I would use the nationally representative survey data to depict the overall pattern of the U.S. overall population, not only the sample of the survey.
+
+## Data and Methods
+The data I use comes from IPUMS CPS, which is a monthly household survey which conducted together by the U.S. Census Bureau and the Bureau of Labor Statistics. CPS collects information about employment, income and population features. One key aspect of CPS data is the sampling weight WTFINL. The weight is used for revising the sampling structure, and make sure the statistics that we calculate represent the total US population.
+I restrict the sample to working-age people aged 18 to 64 to focus on the labor force.
+
+There are three key variables that we use: EDUC records the education level of the sample, EMPSTAT distinguishes the employment condition and is used for calculating the unemployment rate, EARNWEEK measures the weekly wages. All summary statistics are calculated by population weights. I totally drew three visible graphs to analyze the pattern of the labor market. The first graph shows the weighted population distribution among different education levels, which shows the structure of the population. The second graph shows the unemployment rate among different education levels, and the third graph shows the average weekly wage of different education levels.
+
+Each figure is placed right after the discussion of that part, with clear titles, axis labels and data source notes.
+```{r}
+ddi <- read_ipums_ddi("cps_00003.xml")
+cps <- read_ipums_micro(ddi, data_file = "cps_00003.dat.gz")
+
+cps_clean <- cps %>%
+  filter(AGE >= 18 & AGE <= 64) %>%
+  mutate(
+    educ_label = as_factor(lbl_clean(EDUC)),
+    unemployed = EMPSTAT %in% c(21,22),
+    earnweek = EARNWEEK,
+    wt = WTFINL
+  ) %>%
+  filter(!is.na(educ_label), !is.na(unemployed), !is.na(earnweek))
+```
+
+## Results
+The first graph shows the population distribution situation of different education levels, established the structure base of population of this research, which clearly indicates the distribution of education levels of the US population.
+
+This figure tells us how many people fall into each education group in the weighted US population, which helps readers judge how large each group is before looking at unemployment and wage numbers.
+
+Groups with small weighted shares have less reliable estimates. We should be very careful when interpreting results for these smaller subgroups.
+```{r}
+pop_dist <- cps_clean %>%
+  group_by(educ_label) %>%
+  summarise(total_wt = sum(wt, na.rm = TRUE), .groups = "drop") %>%
+  mutate(share = total_wt / sum(total_wt, na.rm = TRUE))
+
+ggplot(pop_dist, aes(x = educ_label, y = share)) +
+  geom_col() +
+  labs(title = "Population Distribution across Education Groups",
+       x = "Education Level",
+       y = "Weighted Population Share") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The second graph shows the unemployment rates of all the education levels, the trend is not simply consistent decreasing: the population of grade 11 have the highest unemployment rate, while the group with a lower education level actually have a lower unemployment rate. While the education level exceeds high school, the unemployment rate decreases again.
+
+This pattern is not the simple downward trend many people expect. It shows unemployment risk does not always fall as schooling rises.
+
+Grade 11 may represent workers who dropped out before completing high school education, which is less likely to be able to have stable employment.
+```{r}
+unemp_rate <- cps_clean %>%
+  group_by(educ_label) %>%
+  summarise(
+    unemp_wt = sum(wt[unemployed], na.rm = TRUE),
+    labor_wt = sum(wt, na.rm = TRUE),
+    unemp_rate = unemp_wt / labor_wt,
+    .groups = "drop"
+  )
+
+ggplot(unemp_rate, aes(x = educ_label, y = unemp_rate)) +
+  geom_col() +
+  labs(title = "Unemployment Rate by Education Level",
+       x = "Education Level",
+       y = "Weighted Unemployment Rate") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The third graph indicates the average weekly income. Almost all education levels have the same level of income. With the increase of education level, the income does not have a significant increase. No matter the education level, the wage level is approximately stable.
+
+The flat wage pattern here is surprising. It suggests weekly earnings do not automatically go up when people get more years of schooling in this sample.
+
+This would reflect selection and measurement limits or specifically the definition of weekly wage in the CPS extract.
+```{r}
+wage_avg <- cps_clean %>%
+  filter(earnweek != 10000) %>%
+  filter(earnweek > 0) %>%
+  group_by(educ_label) %>%
+  summarise(
+    avg_wage = mean(earnweek, na.rm = TRUE),
+    n_obs = n(),
+    .groups = "drop"
+  ) %>%
+  filter(n_obs > 0)
+ggplot(wage_avg, aes(x = educ_label, y = avg_wage)) +
+  geom_col() +
+  labs(title = "Average Weekly Wage by Education Level",
+       x = "Education Level",
+       y = "Weighted Average Weekly Wage") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Conclusion
+This analysis is only descriptive, and cannot prove the causal relationship. Personal abilities, working experience, family background and other complex factors would also influence the employment outcome and the wage level.
+
+These three graphs' role combines with each other since population distribution gives background, unemployment rate shows job risk, and weekly wage shows income.
+
+Combining the results of the three graphs, the relationship between education and labor market is much more complex than simple linear equations. The unemployment rate has the highest point at the education level of grade 11, not at the lowest education level. Also, the average weekly wage would not increase with the increase of education level, and keep stable among all the education levels.
+
+The result shows that the labor market returns brought by education is not necessarily linear. It is true that people have a lower unemployment rate after finishing their high school education, but in this data a higher level of education does not bring a higher weekly wage. Although there exists disturbance variables, this national CPS data still indicates the unemployment risks and weekly wage changes pattern of different education level in U.S..
