@@ -1,14 +1,14 @@
-# Blog 3: Education, Unemployment and Weekly Earnings in the U.S. Labor Market
-This repository reproduces the descriptive analysis of IPUMS CPS labor market data.
+# Education Level, Unemployment Rate and Weekly Wages in the U.S. Labor Market
+This repository contains descriptive analysis exploring how unemployment rate and weekly wages vary across education groups using IPUMS CPS data.
 
 ## Repository Structure
-- `blog3.Rmd`: R Markdown source file, full code and written blog text
-- `blog3.html`: Rendered HTML webpage for GitHub Pages
-- `data/`: Contains the IPUMS CPS extract `cps_00003.xml` and microdata file
-- `figures/`: Auto-generated plot outputs
+- `blog3.Rmd`: R Markdown source file, including analysis code and written discussion
+- `blog3.html`: Rendered HTML file for GitHub Pages
 
 ## Replication Instructions
-1. Download the IPUMS CPS extract and place the .xml and .dat file inside the `data/` folder
-2. Open `blog3.Rmd` in RStudio
-3. Install required packages:
-install.packages(c("ipumsr","tidyverse","haven"))
+1. Go to IPUMS CPS website and create your own data extract with variables: EDUC, EMPSTAT, EARNWEEK, AGE, WTFINL
+2. Download the extract (xml + dat.gz files) and put them into a local folder named `data/` on your own computer
+3. Open `blog3.Rmd` inside RStudio
+4. Install required packages if needed:
+install.packages(c("ipumsr","tidyverse"))
+5. Knit the document. All figures will be generated programmatically.
